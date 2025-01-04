@@ -49,7 +49,9 @@ Typical usage
         "expires": "2013-07-18T17:56:22.186Z"
     }
 
-3. Repeatedly POST subsequent chunks using the ``upload_id`` to identify the upload  to the url linked to ``ChunkedUploadView`` (or any subclass). Example:
+3. 
+Important: For each subsequent chunk, include the Content-Range header to specify the byte range being uploaded.
+Repeatedly POST subsequent chunks using the ``upload_id`` to identify the upload  to the url linked to ``ChunkedUploadView`` (or any subclass). Example:
 
 ::
 
