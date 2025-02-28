@@ -60,21 +60,60 @@ class AbstractChunkedUpload(models.Model):
         return u'<%s - upload_id: %s - bytes: %s - status: %s>' % (
             self.filename, self.upload_id, self.offset, self.status)
 
-    def append_chunk(self, chunk, chunk_size=None, save=True):
-        self.file.close()
-        with self.file.storage.open(self.file.name, mode='ab') as file_obj:
-            file_obj.write(chunk.read())
+    def _get_blob_service_client(self):
+        from azure.core.credentials import AzureNamedKeyCredential
+        from azure.storage.blob import BlobServiceClient
 
-        if chunk_size is not None:
-            self.offset += chunk_size
-        elif hasattr(chunk, 'size'):
-            self.offset += chunk.size
+        account_name = settings.AZURE_ACCOUNT_NAME
+        account_key = settings.AZURE_ACCOUNT_KEY
+        credential = AzureNamedKeyCredential(account_name, account_key)
+        account_url = f"https://{account_name}.blob.core.windows.net"
+        return BlobServiceClient(account_url=account_url, credential=credential)
+
+    def append_chunk(self, chunk, chunk_size=None, save=True):
+        if getattr(settings, 'USE_AZURE_APPEND_BLOB', False):
+            container_name = settings.AZURE_MEDIA_CONTAINER
+            blob_name = self.file.name
+
+            blob_service_client = self._get_blob_service_client()
+            container_client = blob_service_client.get_container_client(container_name)
+            append_blob_client = container_client.get_blob_client(blob_name)
+
+            # For new uploads, ensure we have a clean slate:
+            if self.offset == 0:
+                if append_blob_client.exists():
+                    # Delete existing blob if it's not of the Append Blob type
+                    append_blob_client.delete_blob()
+                append_blob_client.create_append_blob()
+
+            # Append the chunk data
+            data = chunk.read()
+            append_blob_client.append_block(data)
+
+            # Update offset accordingly
+            if chunk_size is not None:
+                self.offset += chunk_size
+            elif hasattr(chunk, 'size'):
+                self.offset += chunk.size
+            else:
+                self.offset += len(data)
         else:
-            self.offset = self.file.size
-        self._md5 = None  # Clear cached md5
+            # Fallback for development using local storage
+            self.file.close()
+            with open(self.file.path, mode='ab') as file_obj:
+                file_obj.write(chunk.read())
+            if chunk_size is not None:
+                self.offset += chunk_size
+            elif hasattr(chunk, 'size'):
+                self.offset += chunk.size
+            else:
+                self.offset = self.file.size
+
+        self._md5 = None  # Clear cached MD5
         if save:
             self.save()
-        self.file.close()
+        if not getattr(settings, 'USE_AZURE_APPEND_BLOB', False):
+            self.file.close()
 
     def get_uploaded_file(self):
         self.file.close()

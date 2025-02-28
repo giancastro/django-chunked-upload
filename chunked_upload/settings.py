@@ -57,3 +57,8 @@ MAX_BYTES = getattr(settings, 'CHUNKED_UPLOAD_MAX_BYTES', DEFAULT_MAX_BYTES)
 # determine the "null" and "blank" properties of "user" field in the "ChunkedUpload" model
 DEFAULT_MODEL_USER_FIELD_NULL = getattr(settings, 'CHUNKED_UPLOAD_MODEL_USER_FIELD_NULL', True)
 DEFAULT_MODEL_USER_FIELD_BLANK = getattr(settings, 'CHUNKED_UPLOAD_MODEL_USER_FIELD_BLANK', True)
+
+USE_AZURE_APPEND_BLOB = False  # Set to False in your dev environment
+AZURE_ACCOUNT_NAME = None
+AZURE_ACCOUNT_KEY = None
+AZURE_MEDIA_CONTAINER = None
