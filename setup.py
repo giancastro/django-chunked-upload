@@ -27,7 +27,7 @@ setup(
     url='https://github.com/juliomalegria/django-chunked-upload',
     download_url=download_url % version,
     install_requires=[
-        'azure-storage-blob>=12.24.1',
+        'azure-storage-blob>=12.0.0',
     ],
     license='MIT-Zero'
 )
