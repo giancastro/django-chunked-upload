@@ -62,8 +62,8 @@ class AbstractChunkedUpload(models.Model):
 
     def append_chunk(self, chunk, chunk_size=None, save=True):
         self.file.close()
-        with open(self.file.path, mode='ab') as file_obj:  # mode = append+binary
-            file_obj.write(chunk.read())  # We can use .read() safely because chunk is already in memory
+        with self.file.storage.open(self.file.name, mode='ab') as file_obj:
+            file_obj.write(chunk.read())
 
         if chunk_size is not None:
             self.offset += chunk_size
@@ -74,7 +74,7 @@ class AbstractChunkedUpload(models.Model):
         self._md5 = None  # Clear cached md5
         if save:
             self.save()
-        self.file.close()  # Flush
+        self.file.close()
 
     def get_uploaded_file(self):
         self.file.close()
